@@ -140,7 +140,7 @@ public class ClientPage extends javax.swing.JFrame {
         OFBRadioButton.setText("OFB");
         OFBRadioButton.setSelected(true);
 
-        CFCRadionButton.setText("CFC");
+        CFCRadionButton.setText("CBC");
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
