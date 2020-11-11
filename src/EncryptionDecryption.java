@@ -3,7 +3,7 @@
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
-import java.security.SecureRandom;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 
@@ -16,7 +16,7 @@ public abstract class EncryptionDecryption {
         byte[] iv = new byte[c.getBlockSize()];
         IvParameterSpec ivParams = new IvParameterSpec(iv);
         c.init(Cipher.ENCRYPT_MODE, secretKey, ivParams);
-        return Base64.getEncoder().encodeToString(c.doFinal(plainText.getBytes("UTF-8")));
+        return Base64.getEncoder().encodeToString(c.doFinal(plainText.getBytes(StandardCharsets.UTF_8)));
     }
 
     public static String decrypt(String cipherText, String mode,String method,SecretKey secretKey) throws Exception{

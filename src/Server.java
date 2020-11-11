@@ -5,11 +5,11 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.security.Key;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Base64;
 
 public class Server{
 
@@ -19,28 +19,14 @@ public class Server{
     private Map<String,SecretKey> encryptionDecryptionKeys;
 
     public static void main(String[] args) {
-        new Server();
+        new Server().run();
     }
 
     public Server(){
-        BufferedWriter writer = null;
         try {
             prepareForConections();
-            writer = new BufferedWriter(new FileWriter("log.txt"));
-            while(isConnect()){
-                ServerConnection serverConnection = new ServerConnection(getMainSocket().accept(), this,writer);
-                serverConnection.start();
-                getServerConnectionArrayList().add(serverConnection);
-            }
         } catch (Exception e) {
             e.printStackTrace();
-        }finally {
-            try {
-                writer.flush();
-                writer.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
     private void prepareForConections() throws Exception{
@@ -55,13 +41,47 @@ public class Server{
         getEncryptionDecryptionKeys().put("DES",generateKey("DES",56));
     }
     private SecretKey generateKey(String method,int size) throws Exception{
-        Key key;
+        SecretKey key;
         SecureRandom rand = new SecureRandom();
         rand.setSeed(1);
         KeyGenerator generator = KeyGenerator.getInstance(method);
         generator.init(size, rand);
         key = generator.generateKey();
-        return (SecretKey) key;
+        return key;
+    }
+
+    public void run(){
+        BufferedWriter writer = null;
+        try {
+            writer = new BufferedWriter(new FileWriter("log.txt"));
+            writeKeysToFile(writer);
+            while(isConnect()){
+                ServerConnection serverConnection = new ServerConnection(getMainSocket().accept(), this,writer);
+                serverConnection.start();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            try {
+                if (writer != null) {
+                    writer.flush();
+                    writer.close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void writeKeysToFile(BufferedWriter writer){
+        try {
+            String encodedKeyAES = Base64.getEncoder().encodeToString(getEncryptionDecryptionKeys().get("AES").getEncoded());
+            String encodedKeyDES = Base64.getEncoder().encodeToString(getEncryptionDecryptionKeys().get("DES").getEncoded());
+            writer.write("AES Key: "+encodedKeyAES+"\nDES Key: "+encodedKeyDES+"\n");
+            writer.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 

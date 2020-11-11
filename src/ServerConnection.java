@@ -13,31 +13,18 @@ public class ServerConnection extends Thread {
     private BufferedWriter bufferedWriter;
 
 
-    public ServerConnection(Socket socket, Server server,BufferedWriter bufferedWriter) throws IOException {
+    public ServerConnection(Socket socket, Server server,BufferedWriter bufferedWriter) {
         try {
-            setBufferedWriter(bufferedWriter);
-            setSocket(socket);
-            setServer(server);
-            prepareForServerConnections();
+            prepareForServerConnections(socket,server,bufferedWriter);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    public void run(){
-        try {
-            while(isConnect()){
-                String username = getDataInputStream().readUTF();
-                String cipherText = getDataInputStream().readUTF();
-                System.out.println(username+"\n"+cipherText); // Konsolo ve loga yazma kısmı
-                getBufferedWriter().write(username+"\n"+cipherText+"\n");
-                getBufferedWriter().flush();
-                broadcast(username,cipherText);
-            }
-            closeSocket();
-        } catch (Exception e) {
-        }
-    }
-    private void prepareForServerConnections() throws Exception{
+    private void prepareForServerConnections(Socket socket,Server server,BufferedWriter bufferedWriter) throws Exception{
+        setBufferedWriter(bufferedWriter);
+        setSocket(socket);
+        setServer(server);
+        server.getServerConnectionArrayList().add(this);
         setConnect(true);
         createStreams();
         sendKeysToClient();
@@ -55,18 +42,47 @@ public class ServerConnection extends Thread {
         }
     }
 
-    private void broadcast(String username,String msg){
-        for (ServerConnection sc: getServer().getServerConnectionArrayList()){
-            try {
-                sc.getDataOutputStream().writeUTF(username);
-                sc.getDataOutputStream().writeUTF(msg);
-                sc.getDataOutputStream().flush();
-            } catch (Exception e) {
-                e.printStackTrace();
+
+
+    @Override
+    public void run(){
+        try {
+            while(isConnect()){
+                String cipherTextSenderUsername = getDataInputStream().readUTF();
+                String cipherText = getDataInputStream().readUTF();
+
+                // Konsolo ve log file yazma kısmı
+                System.out.println(cipherTextSenderUsername+"\n"+cipherText);
+                getBufferedWriter().write(cipherTextSenderUsername+"\n"+cipherText+"\n");
+                getBufferedWriter().flush();
+
+                broadcastMessageToAllClients(cipherTextSenderUsername,cipherText);
             }
+        } catch (Exception e) {
+            closeSocket();
         }
     }
-    public void closeSocket(){
+
+
+    private void broadcastMessageToAllClients(String cipherTextSenderUsername,String cipherText){
+        for (ServerConnection serverConnection : getServer().getServerConnectionArrayList()) {
+            serverConnection.sendMessageToClient(cipherTextSenderUsername, cipherText);
+        }
+
+    }
+    private void sendMessageToClient(String cipherTextSenderUsername,String cipherText){
+        try {
+            getDataOutputStream().writeUTF(cipherTextSenderUsername);
+            getDataOutputStream().writeUTF(cipherText);
+            getDataOutputStream().flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+    private void closeSocket(){
         try {
             getDataInputStream().close();
             getDataOutputStream().close();
